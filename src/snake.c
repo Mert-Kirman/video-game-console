@@ -3,22 +3,25 @@
 #include <termios.h>
 #include <unistd.h>
 
+typedef struct Snake{
+    int xCoordinate;
+    int yCoordinate;
+    int head;
+    struct Snake *next;
+} Snake;
+
 void enableRawMode();
 void disableRawMode();
 int kbhit();
-void printGrid(char grid[15][15]);
+void printGrid(Snake *snake);
 
 int main(){
-    // Initialize game grid
-    char grid[15][15];
-    for(int i=0; i < 15; i++){
-        for(int j=0; j < 15; j++){
-            grid[i][j] = '.';
-        }
-    }
-
-    grid[7][7] = 'O';
-    grid[7][8] = '#';
+    // Initialize snake to start at the middle of the grid
+    Snake *snake = (Snake*)malloc(sizeof(Snake));
+    snake->xCoordinate = 7;
+    snake->yCoordinate = 7;
+    snake->head = 1;
+    snake->next = NULL;
 
     // Buffer to store input from the user
     char input;
@@ -28,7 +31,7 @@ int main(){
     // Game loop
     while(1){
         // Print current grid state
-        printGrid(grid);
+        printGrid(snake);
         printf("%d", rand());
         fflush(stdout);
         sleep(1);
@@ -62,16 +65,39 @@ int main(){
     return 0;
 }
 
-void printGrid(char grid[15][15]){
+void printGrid(Snake *snake){
     // Clear the terminal
     system("clear");
 
+    // Initialize new grid to all '.'
+    char grid[15][15];
+    for(int i=0; i < 15; i++){
+        for(int j=0; j < 15; j++){
+            grid[i][j] = '.';
+        }
+    }
+
+    // Add snake to the grid
+    Snake *current = snake;
+    while(current != NULL) {
+        if(current->head) {
+            grid[current->xCoordinate][current->yCoordinate] = 'O';
+        }
+        else {
+            grid[current->xCoordinate][current->yCoordinate] = '#';
+        }
+
+        current = current->next;
+    }
+
+    // Print the final grid
     for(int i=0; i < 15; i++){
         for(int j=0; j < 15; j++){
             printf("%c ", grid[i][j]);
         }
         printf("\n");
     }
+
     fflush(stdout);
 }
 
