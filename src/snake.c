@@ -16,17 +16,15 @@ void disableRawMode();
 int kbhit();
 void printGrid(Snake *snake, int baitX, int baitY);
 Snake *createNode(int xCoordinate, int yCoordinate, int isHead);
-void addNode(Snake *snake, int xCoordinate, int yCoordinate);
+void addNode(Snake *snake);
 void moveSnake(Snake *snake, char direction);
 void generateBait(Snake *snake, int *baitX, int *baitY);
+void checkEat(Snake *snake, int *baitX, int *baitY);
 
 int main(){
     // Initialize snake to start at the middle of the grid
     Snake *snake = createNode(7, 7, 1);
-    addNode(snake, 7, 8);
-    addNode(snake, 7, 9);
-    addNode(snake, 7, 10);
-    addNode(snake, 7, 11);
+    addNode(snake);
 
     // Initialize bait at a random location on the grid
     int baitX;
@@ -45,7 +43,6 @@ int main(){
     while(1){
         // Print current grid state
         printGrid(snake, baitX, baitY);
-        fflush(stdout);
         usleep(1.5E5);
 
         if(kbhit()){
@@ -61,11 +58,20 @@ int main(){
         }
 
         moveSnake(snake, direction);
+        checkEat(snake, &baitX, &baitY);
     }
 
     // Restore terminal settings
     disableRawMode();
     return 0;
+}
+
+void checkEat(Snake *snake, int *baitX, int *baitY){
+    // If snake's head is on bait, eat it and add a new node
+    if(snake->xCoordinate == *baitX && snake->yCoordinate == *baitY){
+        addNode(snake);
+        generateBait(snake, baitX, baitY);
+    }
 }
 
 // Function that generates a bait at a random point on the grid
@@ -79,7 +85,7 @@ void generateBait(Snake *snake, int *baitX, int *baitY){
 
         Snake *current = snake;
         while(current != NULL){
-            if(current->xCoordinate == *baitX || current->yCoordinate == *baitY){
+            if(current->xCoordinate == *baitX && current->yCoordinate == *baitY){
                 baitSnakeCollision = 1;
                 break;
             }
@@ -119,6 +125,16 @@ void moveSnake(Snake *snake, char direction){
     if(headTargetPositionX < 0 || headTargetPositionX >= 15 || headTargetPositionY < 0 || headTargetPositionY >= 15 ){
         return;
     }
+    
+    // Check if the next position for the snake's head is a body part
+    while(current != NULL){
+        if(headTargetPositionX == current->xCoordinate && headTargetPositionY == current->yCoordinate){
+            return;
+        }
+
+        current = current->next;
+    }
+    current = snake;
 
     int oldCoordinateX;
     int oldCoordinateY;
@@ -160,13 +176,23 @@ Snake *createNode(int xCoordinate, int yCoordinate, int isHead){
 }
 
 // Function that adds a node to the snake at the tail
-void addNode(Snake *snake, int xCoordinate, int yCoordinate){
+void addNode(Snake *snake){
     Snake *current = snake;
+    int tempX;
+    int tempY;
+
+    if(current->next == NULL){
+        tempX = current->xCoordinate;
+        tempY = current->yCoordinate;
+    }
+
     while(current->next != NULL) {  // Reach to the last node
+        tempX = current->xCoordinate;   // Store the last node's coordinates to give it to the new node
+        tempY = current->yCoordinate;
         current = current->next;
     }
 
-    current->next = createNode(xCoordinate, yCoordinate, 0);
+    current->next = createNode(tempX, tempY, 0);
 }
 
 // Function that renders the current game frame
