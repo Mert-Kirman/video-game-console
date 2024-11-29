@@ -14,7 +14,7 @@ typedef struct Snake{
 void enableRawMode();
 void disableRawMode();
 int kbhit();
-void printGrid(Snake *snake);
+void printGrid(Snake *snake, int baitX, int baitY);
 Snake *createNode(int xCoordinate, int yCoordinate, int isHead);
 void addNode(Snake *snake, int xCoordinate, int yCoordinate);
 void moveSnake(Snake *snake, char direction);
@@ -23,6 +23,10 @@ void generateBait(Snake *snake, int *baitX, int *baitY);
 int main(){
     // Initialize snake to start at the middle of the grid
     Snake *snake = createNode(7, 7, 1);
+    addNode(snake, 7, 8);
+    addNode(snake, 7, 9);
+    addNode(snake, 7, 10);
+    addNode(snake, 7, 11);
 
     // Initialize bait at a random location on the grid
     int baitX;
@@ -40,7 +44,7 @@ int main(){
     // Game loop
     while(1){
         // Print current grid state
-        printGrid(snake);
+        printGrid(snake, baitX, baitY);
         fflush(stdout);
         usleep(1.5E5);
 
@@ -108,9 +112,37 @@ void moveSnake(Snake *snake, char direction){
     }
 
     Snake *current = snake;
+    
+    // Check if the next position for the snake's head is out of map borders
+    int headTargetPositionX = current->xCoordinate + xChange;
+    int headTargetPositionY = current->yCoordinate + yChange;
+    if(headTargetPositionX < 0 || headTargetPositionX >= 15 || headTargetPositionY < 0 || headTargetPositionY >= 15 ){
+        return;
+    }
+
+    int oldCoordinateX;
+    int oldCoordinateY;
+
+    // Move the snake's head
+    oldCoordinateX = current->xCoordinate;
+    oldCoordinateY = current->yCoordinate;
+
+    current->xCoordinate += xChange;
+    current->yCoordinate += yChange;
+    current = current->next;
+
+    // Move the snake's body
     while(current != NULL) {
-        current->xCoordinate += xChange;
-        current->yCoordinate += yChange;
+        int tempX = current->xCoordinate;
+        int tempY = current->yCoordinate;
+
+        // Pass the earlier node's coordinates to current node
+        current->xCoordinate = oldCoordinateX;
+        current->yCoordinate = oldCoordinateY;
+
+        // Save the current node's coordinate to pass it to the next node
+        oldCoordinateX = tempX;
+        oldCoordinateY = tempY;
 
         current = current->next;
     }
@@ -138,7 +170,7 @@ void addNode(Snake *snake, int xCoordinate, int yCoordinate){
 }
 
 // Function that renders the current game frame
-void printGrid(Snake *snake){
+void printGrid(Snake *snake, int baitX, int baitY){
     // Clear the terminal
     system("clear");
 
@@ -149,6 +181,9 @@ void printGrid(Snake *snake){
             grid[i][j] = '.';
         }
     }
+
+    // Add bait to the grid
+    grid[baitX][baitY] = 'X';
 
     // Add snake to the grid
     Snake *current = snake;
