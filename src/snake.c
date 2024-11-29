@@ -43,14 +43,17 @@ int main(){
     while(1){
         // Print current grid state
         printGrid(snake, baitX, baitY);
-        usleep(1.5E5);
+        usleep(1.4E5);
 
         if(kbhit()){
             // Take input from player if any
             input = getchar();
 
             if(input == 'w' || input == 's' || input == 'a' || input == 'd'){
-                direction = input;
+                // Snake cannot move in the opposite direction
+                if(!(direction == 'w' && input == 's') && !(direction == 's' && input == 'w') && !(direction == 'a' && input == 'd') && !(direction == 'd' && input == 'a')) {
+                    direction = input;
+                }
             }
             else if(input == 'q'){
                 break;
