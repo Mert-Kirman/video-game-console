@@ -3,6 +3,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
 
 typedef struct Snake{
     int xCoordinate;
@@ -11,30 +12,38 @@ typedef struct Snake{
     struct Snake *next;
 } Snake;
 
+Snake *snake;
+
 void enableRawMode();
 void disableRawMode();
 int kbhit();
-void printGrid(Snake *snake, int baitX, int baitY);
+void handleSignal(int signal);
+void printGrid(int baitX, int baitY);
 Snake *createNode(int xCoordinate, int yCoordinate, int isHead);
-void addNode(Snake *snake);
-void moveSnake(Snake *snake, char direction);
-void generateBait(Snake *snake, int *baitX, int *baitY);
-void checkEat(Snake *snake, int *baitX, int *baitY);
+void addNode();
+void moveSnake(char direction);
+void generateBait(int *baitX, int *baitY);
+void checkEat(int *baitX, int *baitY);
+void freeResources();
 
 int main(){
+    // Connect signals to the signal handler
+    signal(SIGINT, handleSignal);
+    signal(SIGTERM, handleSignal);
+
     // Initialize snake to start at the middle of the grid
-    Snake *snake = createNode(7, 7, 1);
-    addNode(snake);
+    snake = createNode(7, 7, 1);
+    addNode();
 
     // Initialize bait at a random location on the grid
     int baitX;
     int baitY;
-    generateBait(snake, &baitX, &baitY);
+    generateBait(&baitX, &baitY);
 
     // Direction the snake is headed currently
     char direction = 'a';
 
-    // Buffer to store input from the user
+    // Variable to store input from the user
     char input;
 
     enableRawMode();
@@ -42,7 +51,7 @@ int main(){
     // Game loop
     while(1){
         // Print current grid state
-        printGrid(snake, baitX, baitY);
+        printGrid(baitX, baitY);
         usleep(1.4E5);
 
         if(kbhit()){
@@ -60,25 +69,41 @@ int main(){
             }
         }
 
-        moveSnake(snake, direction);
-        checkEat(snake, &baitX, &baitY);
+        moveSnake(direction);
+        checkEat(&baitX, &baitY);
     }
+
+    // Release dynamically allocated memory
+    freeResources();
 
     // Restore terminal settings
     disableRawMode();
     return 0;
 }
 
-void checkEat(Snake *snake, int *baitX, int *baitY){
+// Function that free dynamic linked list
+void freeResources(){
+    Snake *current = snake;
+    Snake *nextNode;
+
+    while(current != NULL) {
+        nextNode = current->next;
+        free(current);
+        current = nextNode;
+    }
+}
+
+// Function that checks if the snake can eat the bait
+void checkEat(int *baitX, int *baitY){
     // If snake's head is on bait, eat it and add a new node
     if(snake->xCoordinate == *baitX && snake->yCoordinate == *baitY){
-        addNode(snake);
-        generateBait(snake, baitX, baitY);
+        addNode();
+        generateBait(baitX, baitY);
     }
 }
 
 // Function that generates a bait at a random point on the grid
-void generateBait(Snake *snake, int *baitX, int *baitY){
+void generateBait(int *baitX, int *baitY){
     srand(time(NULL));  // Set the seed for the random function
 
     while(1){
@@ -103,7 +128,7 @@ void generateBait(Snake *snake, int *baitX, int *baitY){
 }
 
 // Function that moves snake on the grid in the current direction
-void moveSnake(Snake *snake, char direction){
+void moveSnake(char direction){
     int xChange = 0;
     int yChange = 0;
 
@@ -179,7 +204,7 @@ Snake *createNode(int xCoordinate, int yCoordinate, int isHead){
 }
 
 // Function that adds a node to the snake at the tail
-void addNode(Snake *snake){
+void addNode(){
     Snake *current = snake;
     int tempX;
     int tempY;
@@ -199,7 +224,7 @@ void addNode(Snake *snake){
 }
 
 // Function that renders the current game frame
-void printGrid(Snake *snake, int baitX, int baitY){
+void printGrid(int baitX, int baitY){
     // Clear the terminal
     system("clear");
 
@@ -254,6 +279,7 @@ void disableRawMode() {
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
+// Function that checks for non-blocking keyboard press
 int kbhit() {
     struct timeval timeout = {0, 0}; // Zero timeout for non-blocking check
     fd_set readfds;
@@ -262,4 +288,11 @@ int kbhit() {
     FD_SET(STDIN_FILENO, &readfds);
 
     return select(1, &readfds, NULL, NULL, &timeout);
+}
+
+// Function that cleans up and exits gracefully
+void handleSignal(int signal) {
+    freeResources();    // Free memory
+    disableRawMode();   // Reset terminal settings
+    exit(0); // Exit the game
 }
