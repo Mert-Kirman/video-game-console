@@ -432,6 +432,7 @@ void printGrid(int playerScore){
     }
 
     // Print the final grid
+    printf("Use 'wasd' to move and space to shoot enemies marked with 'X'\n");
     printf("Player Score: %d\n", playerScore);
     for(int i=0; i < ROW_SIZE; i++){
         for(int j=0; j < COL_SIZE; j++){
