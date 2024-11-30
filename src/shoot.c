@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
+#include <sys/time.h>
 
 typedef struct Bullet{
     int xCoordinate;
@@ -148,7 +149,7 @@ void addBulletNode(int xCoordinate, int yCoordinate, int velocityX, int velocity
 // Function that removes a node with a given id from the bullets linked list
 void removeBullet(int id) {
     Bullet *currentBullet = bullets;
-    Bullet *previousBullet;
+    Bullet *previousBullet = NULL;
 
     while(currentBullet != NULL) {
         if(currentBullet->id == id) {   // Remove this node
@@ -293,7 +294,10 @@ void moveBullets(int *playerScore){
 
         // Check if target location exceeds grid borders, if so remove the bullet
         if(targetX < 0 || targetX >= COL_SIZE || targetY < 0 || targetY >= ROW_SIZE){
+            Bullet *tmp = currentBullet->next;
             removeBullet(currentBullet->id);
+            currentBullet = tmp;
+            continue;
         }
 
         // Check if the bullet hits any enemy
