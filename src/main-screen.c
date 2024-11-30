@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/time.h>
 
 void enableRawMode();
 void disableRawMode();
