@@ -79,7 +79,7 @@ int main(){
 
     // Game loop
     while(1){
-        if(timePassed % 10 == 0){
+        if(timePassed % 15 == 0){
             // Create an enemy at a random location on the grid every 10 frames
             generateEnemy();
         }
@@ -96,7 +96,7 @@ int main(){
             if(input == 'w' || input == 'a' || input == 's' || input == 'd'){
                 movePlayer(input);
             }
-            else if(input == '\n'){
+            else if(input == ' '){
                 shoot();
                 playerScore -= 5;   // Score decreases by 5 for every bullet fired
             }
