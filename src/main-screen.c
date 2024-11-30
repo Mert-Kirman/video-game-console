@@ -28,7 +28,7 @@ int main(){
     signal(SIGTERM, handleSignal);
 
     // Store available games
-    char availableGames[3][12] = {"snake", "ball", "dino"};
+    char availableGames[3][12] = {"snake", "ball", "shoot"};
 
     enableRawMode();
 
