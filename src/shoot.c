@@ -274,16 +274,19 @@ void movePlayer(char input){
             player.yCoordinate += 1;
         }
     }
+
+    player.direction = input;
 }
 
 // Function that moves all the bullets according to their velocities and checks if bullets hit any enemy
 void moveBullets(int *playerScore){
     int targetX;
     int targetY;
-    int enemyHit = 0;
 
     Bullet *currentBullet = bullets;
     while(currentBullet != NULL) {
+        int enemyHit = 0;
+
         // Calculate target position in the next frame
         targetX = currentBullet->xCoordinate + currentBullet->velocityX;
         targetY = currentBullet->yCoordinate + currentBullet->velocityY;
@@ -298,8 +301,10 @@ void moveBullets(int *playerScore){
         while(currentEnemy != NULL) {
             if(targetX == currentEnemy->xCoordinate && targetY == currentEnemy->yCoordinate){
                 enemyHit = 1;
+                Bullet *tmp = currentBullet->next;
                 removeBullet(currentBullet->id);
                 removeEnemy(currentEnemy->id);
+                currentBullet = tmp;
                 *playerScore += 10;
                 break;
             }
@@ -310,9 +315,8 @@ void moveBullets(int *playerScore){
         if(!enemyHit) { // If the bullet did not hit any enemy, update its location
             currentBullet->xCoordinate = targetX;
             currentBullet->yCoordinate = targetY;
+            currentBullet = currentBullet->next;
         }
-
-        currentBullet = currentBullet->next;
     }
 }
 
@@ -323,9 +327,10 @@ void generateEnemy(){
         int newEnemyX = rand() % COL_SIZE;
         int newEnemyY = rand() % ROW_SIZE;
 
+        // New enemy should not collide with an existing enemy
         Person *currentEnemy = enemies;
         while(currentEnemy != NULL){
-            if(currentEnemy->xCoordinate == newEnemyX && currentEnemy->yCoordinate == newEnemyY){   // New enemy collides with an existing enemy
+            if(currentEnemy->xCoordinate == newEnemyX && currentEnemy->yCoordinate == newEnemyY){
                 enemyCollision = 1;
                 break;
             }
@@ -333,10 +338,20 @@ void generateEnemy(){
             currentEnemy = currentEnemy->next;
         }
 
+        // New enemy should not collide with an existing bullet
+        Bullet *currentBullet = bullets;
+        while(currentBullet != NULL) {
+            if(currentBullet->xCoordinate == newEnemyX && currentBullet->yCoordinate == newEnemyY) {
+                enemyCollision = 1;
+                break;
+            }
+
+            currentBullet = currentBullet->next;
+        }
+
         int enemyPlayerDistance = (newEnemyX - player.xCoordinate) * (newEnemyX - player.xCoordinate) + (newEnemyY - player.yCoordinate) * (newEnemyY - player.yCoordinate);
         if(enemyPlayerDistance < 4){   // New enemy cannot be closer to player less than 2 units
             enemyCollision = 1;
-            break;
         }
 
         if(!enemyCollision){ // If there are no collisions, create this new enemy
