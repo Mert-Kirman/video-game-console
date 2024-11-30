@@ -42,9 +42,6 @@ int main(){
     // Track player score
     int playerScore = 0;
 
-    // Create a ball at a random location on the grid
-    generateBall();
-
     // Variable to store input from the user
     char input;
 
@@ -52,6 +49,11 @@ int main(){
 
     // Game loop
     while(1){
+        if(playerScore >= 100 * currentBallCount && currentBallCount <= MAX_BALL_COUNT){
+            // Create a ball at a random location on the grid
+            generateBall();
+        }
+
         // Print current grid state
         printGrid(playerBarX, playerScore);
         usleep(1.4E5);
