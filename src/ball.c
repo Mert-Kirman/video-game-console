@@ -25,11 +25,11 @@ void enableRawMode();
 void disableRawMode();
 int kbhit();
 void handleSignal(int signal);
-void printGrid(int playerBarY);
+void printGrid(int playerBarX, int playerScore);
 void freeResources();
 void generateBall();
-void movePlayerBar(char input, int *playerBarY);
-void moveBalls();
+void movePlayerBar(char input, int *playerBarX);
+void moveBalls(int playerBarX, int *playerScore);
 
 int main(){
     // Connect signals to the signal handler
@@ -37,7 +37,10 @@ int main(){
     signal(SIGTERM, handleSignal);
 
     // Initialize bar at the middle of the grid
-    int playerBarY = COL_SIZE / 2;
+    int playerBarX = COL_SIZE / 2;
+
+    // Track player score
+    int playerScore = 0;
 
     // Create a ball at a random location on the grid
     generateBall();
@@ -50,7 +53,7 @@ int main(){
     // Game loop
     while(1){
         // Print current grid state
-        printGrid(playerBarY);
+        printGrid(playerBarX, playerScore);
         usleep(1.4E5);
 
         if(kbhit()){
@@ -58,14 +61,14 @@ int main(){
             input = getchar();
 
             if(input == 'a' || input == 'd'){
-                movePlayerBar(input, &playerBarY);
+                movePlayerBar(input, &playerBarX);
             }
             else if(input == 'q'){
                 break;
             }
         }
 
-        // moveBalls();
+        moveBalls(playerBarX, &playerScore);
     }
 
     // Release dynamically allocated memory
@@ -77,20 +80,53 @@ int main(){
 }
 
 // Function that moves the player bar given it does not exceed grid borders
-void movePlayerBar(char input, int *playerBarY){
+void movePlayerBar(char input, int *playerBarX){
     if(input == 'a') {
-        if(*playerBarY - 1 > 0){
-            *playerBarY -= 1;
+        if(*playerBarX - 1 > 0){
+            *playerBarX -= 1;
         }
     }
     else if(input == 'd') {
-        if(*playerBarY + 1 < COL_SIZE - 1){
-            *playerBarY += 1;
+        if(*playerBarX + 1 < COL_SIZE - 1){
+            *playerBarX += 1;
         }
     }
 }
 
-void moveBalls(){}
+void moveBalls(int playerBarX, int *playerScore){
+    int targetX;
+    int targetY;
+    Ball *current;
+    for(int i = 0; i < currentBallCount; i++) {
+        current = balls[i];
+
+        // Calculate target position in the next frame
+        targetX = current->xCoordinate + current->velocityX;
+        targetY = current->yCoordinate + current->velocityY;
+
+        // Check if target location collide with grid borders, if so bounce them
+        if(targetX < 0 || targetX >= COL_SIZE){    // Ball hits left or right border
+            current->velocityX = current->velocityX * -1;
+            targetX += 2 * current->velocityX;
+        }
+
+        if(targetY < 0 || targetY >= ROW_SIZE){    // Ball hits ceiling or floor
+            current->velocityY = current->velocityY * -1;
+            targetY += 2 * current->velocityY;
+        }
+
+        // Check if the ball hits the player bar
+        if(targetY == ROW_SIZE -1 && (targetX == playerBarX - 1 || targetX == playerBarX || targetX == playerBarX + 1)){
+            current->velocityY = current->velocityY * -1;
+            targetY += 2 * current->velocityY;
+            *playerScore += 10;
+        }
+
+        current->xCoordinate = targetX;
+        current->yCoordinate = targetY;
+        balls[i] = current;
+    }
+}
 
 // Function that generates a ball at a random point on the grid
 void generateBall(){
@@ -98,13 +134,14 @@ void generateBall(){
 
     while(1){
         int ballBallCollision = 0; // Value for checking if ball position collides with any existing balls on the grid
-        int newBallY = rand() % COL_SIZE;
+        int newBallX = rand() % COL_SIZE;
 
         Ball *current;
         for(int i = 0; i < currentBallCount; i++){
             current = balls[i];
-            if (current->xCoordinate == 12 && current->yCoordinate == newBallY){
+            if (current->yCoordinate == 3 && current->xCoordinate == newBallX){
                 ballBallCollision = 1;
+                break;
             }
         }
 
@@ -112,8 +149,8 @@ void generateBall(){
             current = (Ball*)malloc(sizeof(Ball));
             current->velocityX = 1;
             current->velocityY = 1;
-            current->xCoordinate = 3;
-            current->yCoordinate = newBallY;
+            current->xCoordinate = newBallX;
+            current->yCoordinate = 3;
             balls[currentBallCount] = current;
             currentBallCount += 1;
             break;
@@ -131,7 +168,7 @@ void freeResources(){
 }
 
 // Function that renders the current game frame
-void printGrid(int playerBarY){
+void printGrid(int playerBarX, int playerScore){
     // Clear the terminal
     system("clear");
 
@@ -147,15 +184,16 @@ void printGrid(int playerBarY){
     Ball *current;
     for(int i = 0; i < currentBallCount; i++) {
         current = balls[i];
-        grid[current->xCoordinate][current->yCoordinate] = 'O';
+        grid[current->yCoordinate][current->xCoordinate] = 'O';
     }
 
     // Add player bar to the grid
-    grid[ROW_SIZE-1][playerBarY - 1] = '=';
-    grid[ROW_SIZE-1][playerBarY] = '=';
-    grid[ROW_SIZE-1][playerBarY + 1] = '=';
+    grid[ROW_SIZE-1][playerBarX - 1] = '=';
+    grid[ROW_SIZE-1][playerBarX] = '=';
+    grid[ROW_SIZE-1][playerBarX + 1] = '=';
 
     // Print the final grid
+    printf("%d\n", playerScore);
     for(int i=0; i < ROW_SIZE; i++){
         for(int j=0; j < COL_SIZE; j++){
             printf("%c ", grid[i][j]);
